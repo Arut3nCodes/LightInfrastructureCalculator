@@ -1,0 +1,76 @@
+body {
+    font-family: Arial, sans-serif;
+    background: #f4f8ff;
+    margin: 0;
+    min-height: 100vh;
+
+    /* key change */
+    display: flex;
+    justify-content: center;
+}
+
+/* vertical stacking container */
+.page {
+    width: 100%;
+    max-width: 900px;
+
+    display: flex;
+    flex-direction: column; /* TOP → BOTTOM */
+    align-items: center;
+
+    padding: 40px 20px;
+    gap: 20px; /* spacing between elements */
+}
+
+/* title */
+h1 {
+    color: #1e4fa1;
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+/* summary card */
+.summary {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    width: 500px;
+    box-shadow: 0 10px 25px rgba(0, 80, 200, 0.15); /* match form */
+    margin-bottom: 20px;
+}
+
+/* table card */
+table {
+    width: 900px;
+    max-width: 95vw;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 10px 25px rgba(0, 80, 200, 0.15);
+}
+
+/* header */
+th {
+    background: #1e4fa1;
+    color: white;
+    padding: 12px;
+    text-align: center;
+}
+
+/* cells */
+td {
+    padding: 10px;
+    border-bottom: 1px solid #e6eefc;
+    text-align: center;
+}
+
+/* striped rows */
+tr:nth-child(even) {
+    background: #f7faff;
+}
+
+/* hover */
+tr:hover {
+    background: #eaf2ff;
+}

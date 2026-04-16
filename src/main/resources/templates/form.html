@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="pl">
+<head>
+    <title>Input Form</title>
+
+    <link rel="stylesheet" th:href="@{/css/form.css}">
+</head>
+
+<body>
+
+<div class="page">
+
+    <h2>InputDTO Test Form</h2>
+
+    <form th:action="@{/submit}"
+          th:object="${inputDTO}"
+          method="post"
+          onsubmit="convertAll()">
+
+        <!-- POWER -->
+        <div>
+            <label>Power:</label>
+            <div class="row">
+                <input type="number" step="0.01" id="powerInput" th:field="*{power}"/>
+                <select id="powerUnit">
+                    <option value="1">W</option>
+                    <option value="1000">kW</option>
+                    <option value="1000000">MW</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- ENERGY -->
+        <div>
+            <label>Energy Consumption:</label>
+            <div class="row">
+                <input type="number" step="0.01" id="energyInput" th:field="*{energyConsumption}" />
+                <select id="energyUnit">
+                    <option value="1">Wh</option>
+                    <option value="1000">kWh</option>
+                    <option value="1000000">MWh</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- RATE -->
+        <div>
+            <label>Rate:</label>
+            <div class="row">
+                <input type="number" step="0.0001" id="rateInput" th:field="*{rate}" />
+                <select id="rateUnit">
+                    <option value="1">zł/Wh</option>
+                    <option value="0.001">zł/kWh</option>
+                    <option value="0.000001">zł/MWh</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- DATES -->
+        <div>
+            <label>Start Date:</label>
+            <input type="date" th:field="*{calculationStartDate}" />
+        </div>
+
+        <div>
+            <label>End Date:</label>
+            <input type="date" th:field="*{calculationEndDate}" />
+        </div>
+
+        <!-- SUNRISE OFFSET -->
+        <div>
+            <label>Sunrise Offset:</label>
+            <div class="row">
+                <input type="number" id="sunriseOffsetInput" th:field="*{sunriseOffset}" />
+                <select id="sunriseUnit">
+                    <option value="3600">Hours</option>
+                    <option value="60">Minutes</option>
+                    <option value="1">Seconds</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- SUNSET OFFSET -->
+        <div>
+            <label>Sunset Offset:</label>
+            <div class="row">
+                <input type="number" id="sunsetOffsetInput" th:field="*{sunsetOffset}" />
+                <select id="sunsetUnit">
+                    <option value="3600">Hours</option>
+                    <option value="60">Minutes</option>
+                    <option value="1">Seconds</option>
+                </select>
+            </div>
+        </div>
+
+        <button type="submit">Submit</button>
+
+    </form>
+
+</div>
+
+<script>
+    function convertAll() {
+
+        const powerValue = document.getElementById("powerInput").value || 0;
+        const powerUnit = document.getElementById("powerUnit").value;
+        document.getElementById("powerInput").value = powerValue * powerUnit;
+
+        const energyValue = document.getElementById("energyInput").value || 0;
+        const energyUnit = document.getElementById("energyUnit").value;
+        document.getElementById("energyInput").value = energyValue * energyUnit;
+
+        const rateValue = document.getElementById("rateInput").value || 0;
+        const rateUnit = document.getElementById("rateUnit").value;
+        document.getElementById("rateInput").value = rateValue * rateUnit;
+
+        const sunriseValue = document.getElementById("sunriseOffsetInput").value || 0;
+        const sunriseUnit = document.getElementById("sunriseUnit").value;
+        document.getElementById("sunriseOffsetInput").value = sunriseValue * sunriseUnit;
+
+        const sunsetValue = document.getElementById("sunsetOffsetInput").value || 0;
+        const sunsetUnit = document.getElementById("sunsetUnit").value;
+        document.getElementById("sunsetOffsetInput").value = sunsetValue * sunsetUnit;
+    }
+</script>
+
+</body>
+</html>

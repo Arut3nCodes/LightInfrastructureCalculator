@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Calculation Results</title>
+    <link rel="stylesheet" th:href="@{/css/result.css}">
+</head>
+
+<body>
+
+<div class="page">
+
+    <h1>Calculation Results</h1>
+
+    <div class="summary">
+        <p>
+            <strong>Total energy used:</strong>
+            <span th:text="${calculation.overallEnergyUsed}"></span> kWh
+        </p>
+
+        <p>
+            <strong>Total cost:</strong>
+            <span th:text="${calculation.overallCost}"></span> PLN
+        </p>
+    </div>
+
+    <table>
+        <thead>
+        <tr>
+            <th>Date</th>
+            <th>Sunrise</th>
+            <th>Sunset</th>
+            <th>Working time (h)</th>
+            <th>Energy used</th>
+            <th>Cost</th>
+        </tr>
+        </thead>
+
+        <tbody>
+        <tr th:each="day : ${calculation.listOfDailyResults}">
+            <td th:text="${day.dayOfCalculation}"></td>
+            <td th:text="${day.timeStarted}"></td>
+            <td th:text="${day.timeEnded}"></td>
+            <td th:text="${day.timeWorking}"></td>
+            <td th:text="${day.energyUsed}"></td>
+            <td th:text="${day.cost}"></td>
+        </tr>
+        </tbody>
+    </table>
+
+</div>
+
+</body>
+</html>
