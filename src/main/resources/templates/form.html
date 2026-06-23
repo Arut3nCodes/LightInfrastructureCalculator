@@ -1,8 +1,10 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" lang="pl">
 <head>
-    <title>Input Form</title>
-
+    <title>Kalkulator infrastruktury oświetleniowej</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" th:href="@{/css/form.css}">
 </head>
 
@@ -10,118 +12,151 @@
 
 <div class="page">
 
-    <h2>InputDTO Test Form</h2>
+    <h2>Kalkulator infrastruktury oświetleniowej</h2>
 
     <form th:action="@{/submit}"
           th:object="${inputDTO}"
           method="post"
           onsubmit="convertAll()">
-
-        <!-- POWER -->
-        <div>
-            <label>Power:</label>
+        
+        <div class="form-group">
+            <label>Moc:</label>
             <div class="row">
-                <input type="number" step="0.01" id="powerInput" th:field="*{power}"/>
+                <input type="number" step="0.01" id="powerInputDisplay" placeholder="Wprowadź moc"/>
+                <input type="hidden" id="powerInput" th:field="*{power}"/>
                 <select id="powerUnit">
-                    <option value="1">W</option>
-                    <option value="1000">kW</option>
-                    <option value="1000000">MW</option>
+                    <option value="1" selected>kW</option>
+                    <option value="1000">MW</option>
                 </select>
+            </div>
+            <div th:if="${#fields.hasErrors('power')}" th:errors="*{power}" class="error"></div>
+        </div>
+
+        <div class="row">
+            <div class="form-group flex-1">
+                <label>Zużycie energii (opcjonalne):</label>
+                <div class="row">
+                    <input type="number" step="0.01" id="energyInputDisplay" placeholder="Wprowadź zużycie" />
+                    <input type="hidden" id="energyInput" th:field="*{energyConsumption}"/>
+                    <select id="energyUnit">
+                        <option value="1" selected>kWh</option>
+                        <option value="1000">MWh</option>
+                    </select>
+                </div>
+                <div th:if="${#fields.hasErrors('energyConsumption')}" th:errors="*{energyConsumption}" class="error"></div>
+            </div>
+
+            <div class="form-group flex-1">
+                <label>Dopuszczalny błąd zużycia:</label>
+                <div class="row">
+                    <input type="number" step="0.01" id="errorInputDisplay" placeholder="0.00" />
+                    <input type="hidden" id="errorInput" th:field="*{allowedError}"/>
+                    <select id="errorUnit">
+                        <option value="1" selected>kWh</option>
+                        <option value="1000">MWh</option>
+                    </select>
+                </div>
+                <div th:if="${#fields.hasErrors('allowedError')}" th:errors="*{allowedError}" class="error"></div>
             </div>
         </div>
 
-        <!-- ENERGY -->
-        <div>
-            <label>Energy Consumption:</label>
+        <div class="form-group">
+            <label>Stawka za godzinę:</label>
             <div class="row">
-                <input type="number" step="0.01" id="energyInput" th:field="*{energyConsumption}" />
-                <select id="energyUnit">
-                    <option value="1">Wh</option>
-                    <option value="1000">kWh</option>
-                    <option value="1000000">MWh</option>
-                </select>
-            </div>
-        </div>
-
-        <!-- RATE -->
-        <div>
-            <label>Rate:</label>
-            <div class="row">
-                <input type="number" step="0.0001" id="rateInput" th:field="*{rate}" />
+                <input type="number" step="0.0001" id="rateInputDisplay" placeholder="Wprowadź stawkę" />
+                <input type="hidden" id="rateInput" th:field="*{rate}"/>
                 <select id="rateUnit">
-                    <option value="1">zł/Wh</option>
-                    <option value="0.001">zł/kWh</option>
-                    <option value="0.000001">zł/MWh</option>
+                    <option value="1" selected>zł/kWh</option>
+                    <option value="0.001">zł/MWh</option>
                 </select>
             </div>
+            <div th:if="${#fields.hasErrors('rate')}" th:errors="*{rate}" class="error"></div>
         </div>
 
-        <!-- DATES -->
-        <div>
-            <label>Start Date:</label>
+        <div class="form-group">
+            <label>Data rozpoczęcia kalkulacji:</label>
             <input type="date" th:field="*{calculationStartDate}" />
+            <div th:if="${#fields.hasErrors('calculationStartDate')}" th:errors="*{calculationStartDate}" class="error"></div>
         </div>
 
-        <div>
-            <label>End Date:</label>
+        <div class="form-group">
+            <label>Data zakończenia kalkulacji:</label>
             <input type="date" th:field="*{calculationEndDate}" />
+            <div th:if="${#fields.hasErrors('calculationEndDate')}" th:errors="*{calculationEndDate}" class="error"></div>
         </div>
 
-        <!-- SUNRISE OFFSET -->
-        <div>
-            <label>Sunrise Offset:</label>
+        <div class="form-group">
+            <label>Offset uruchomienia lamp (Zachód słońca):</label>
             <div class="row">
-                <input type="number" id="sunriseOffsetInput" th:field="*{sunriseOffset}" />
+                <input type="number" id="sunriseOffsetInputDisplay" placeholder="0" />
+                <input type="hidden" id="sunriseOffsetInput" th:field="*{sunriseOffset}"/>
                 <select id="sunriseUnit">
-                    <option value="3600">Hours</option>
-                    <option value="60">Minutes</option>
-                    <option value="1">Seconds</option>
+                    <option value="3600">Godziny</option>
+                    <option value="60" selected>Minuty</option>
+                    <option value="1">Sekundy</option>
                 </select>
             </div>
+            <div th:if="${#fields.hasErrors('sunriseOffset')}" th:errors="*{sunriseOffset}" class="error"></div>
         </div>
 
-        <!-- SUNSET OFFSET -->
-        <div>
-            <label>Sunset Offset:</label>
+        <div class="form-group">
+            <label>Offset uruchomienia lamp (Wschód słońca):</label>
             <div class="row">
-                <input type="number" id="sunsetOffsetInput" th:field="*{sunsetOffset}" />
+                <input type="number" id="sunsetOffsetInputDisplay" placeholder="0" />
+                <input type="hidden" id="sunsetOffsetInput" th:field="*{sunsetOffset}"/>
                 <select id="sunsetUnit">
-                    <option value="3600">Hours</option>
-                    <option value="60">Minutes</option>
-                    <option value="1">Seconds</option>
+                    <option value="3600">Godziny</option>
+                    <option value="60" selected>Minuty</option>
+                    <option value="1">Sekundy</option>
                 </select>
             </div>
+            <div th:if="${#fields.hasErrors('sunsetOffset')}" th:errors="*{sunsetOffset}" class="error"></div>
         </div>
 
-        <button type="submit">Submit</button>
+        <button type="submit">Oblicz wyniki</button>
 
     </form>
 
 </div>
 
 <script>
-    function convertAll() {
+    function initialize() {
+        const fields = [
+            { display: "powerInputDisplay", hidden: "powerInput", unit: "powerUnit" },
+            { display: "energyInputDisplay", hidden: "energyInput", unit: "energyUnit" },
+            { display: "errorInputDisplay", hidden: "errorInput", unit: "errorUnit" },
+            { display: "rateInputDisplay", hidden: "rateInput", unit: "rateUnit" },
+            { display: "sunriseOffsetInputDisplay", hidden: "sunriseOffsetInput", unit: "sunriseUnit" },
+            { display: "sunsetOffsetInputDisplay", hidden: "sunsetOffsetInput", unit: "sunsetUnit" }
+        ];
 
-        const powerValue = document.getElementById("powerInput").value || 0;
-        const powerUnit = document.getElementById("powerUnit").value;
-        document.getElementById("powerInput").value = powerValue * powerUnit;
-
-        const energyValue = document.getElementById("energyInput").value || 0;
-        const energyUnit = document.getElementById("energyUnit").value;
-        document.getElementById("energyInput").value = energyValue * energyUnit;
-
-        const rateValue = document.getElementById("rateInput").value || 0;
-        const rateUnit = document.getElementById("rateUnit").value;
-        document.getElementById("rateInput").value = rateValue * rateUnit;
-
-        const sunriseValue = document.getElementById("sunriseOffsetInput").value || 0;
-        const sunriseUnit = document.getElementById("sunriseUnit").value;
-        document.getElementById("sunriseOffsetInput").value = sunriseValue * sunriseUnit;
-
-        const sunsetValue = document.getElementById("sunsetOffsetInput").value || 0;
-        const sunsetUnit = document.getElementById("sunsetUnit").value;
-        document.getElementById("sunsetOffsetInput").value = sunsetValue * sunsetUnit;
+        fields.forEach(f => {
+            const hiddenVal = document.getElementById(f.hidden).value;
+            const unitVal = document.getElementById(f.unit).value;
+            if (hiddenVal) {
+                document.getElementById(f.display).value = (hiddenVal / unitVal).toFixed(4).replace(/\.?0+$/, "");
+            }
+        });
     }
+
+    function convertAll() {
+        const fields = [
+            { display: "powerInputDisplay", hidden: "powerInput", unit: "powerUnit" },
+            { display: "energyInputDisplay", hidden: "energyInput", unit: "energyUnit" },
+            { display: "errorInputDisplay", hidden: "errorInput", unit: "errorUnit" },
+            { display: "rateInputDisplay", hidden: "rateInput", unit: "rateUnit" },
+            { display: "sunriseOffsetInputDisplay", hidden: "sunriseOffsetInput", unit: "sunriseUnit" },
+            { display: "sunsetOffsetInputDisplay", hidden: "sunsetOffsetInput", unit: "sunsetUnit" }
+        ];
+
+        fields.forEach(f => {
+            const displayVal = document.getElementById(f.display).value || 0;
+            const unitVal = document.getElementById(f.unit).value;
+            document.getElementById(f.hidden).value = displayVal * unitVal;
+        });
+    }
+
+    window.onload = initialize;
 </script>
 
 </body>

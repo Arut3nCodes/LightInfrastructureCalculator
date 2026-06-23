@@ -2,51 +2,473 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>Calculation Results</title>
+    <title>Wyniki obliczeń</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" th:href="@{/css/result.css}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
 <body>
 
 <div class="page">
 
-    <h1>Calculation Results</h1>
+    <h1>Wyniki obliczeń</h1>
 
-    <div class="summary">
-        <p>
-            <strong>Total energy used:</strong>
-            <span th:text="${calculation.overallEnergyUsed}"></span> kWh
-        </p>
-
-        <p>
-            <strong>Total cost:</strong>
-            <span th:text="${calculation.overallCost}"></span> PLN
-        </p>
+    <div class="header-controls">
+        <div class="view-selector">
+            <button class="selector-btn active" onclick="showView('overall')">Ogólne</button>
+            <button class="selector-btn" onclick="showView('monthly')">Miesięczne</button>
+            <button class="selector-btn" onclick="showView('daily')">Dzienne</button>
+        </div>
+        <div class="unit-selector-wrapper">
+            <label for="unitSelector">Jednostka:</label>
+            <select id="unitSelector" onchange="changeEnergyUnit()">
+                <option value="kWh">kWh</option>
+                <option value="MWh">MWh</option>
+            </select>
+        </div>
     </div>
 
-    <table>
-        <thead>
-        <tr>
-            <th>Date</th>
-            <th>Sunrise</th>
-            <th>Sunset</th>
-            <th>Working time (h)</th>
-            <th>Energy used</th>
-            <th>Cost</th>
-        </tr>
-        </thead>
+    <div id="overall-view" class="view-content active">
+        <div class="summary">
+            <p>
+                <strong>Ścieżki obliczeń:</strong>
+                <span th:text="${calculation.calculationPath}"></span>
+            </p>
+            <p>
+                <strong>Całkowite zużycie energii:</strong>
+                <span class="energy-value"
+                      th:data-kwh="${calculation.overallEnergyUsed}"
+                      th:text="${#numbers.formatDecimal(calculation.overallEnergyUsed, 1, 2)}"></span>
+                <span class="unit-label">kWh</span>
+            </p>
 
-        <tbody>
-        <tr th:each="day : ${calculation.listOfDailyResults}">
-            <td th:text="${day.dayOfCalculation}"></td>
-            <td th:text="${day.timeStarted}"></td>
-            <td th:text="${day.timeEnded}"></td>
-            <td th:text="${day.timeWorking}"></td>
-            <td th:text="${day.energyUsed}"></td>
-            <td th:text="${day.cost}"></td>
-        </tr>
-        </tbody>
-    </table>
+            <p>
+                <strong>Całkowity koszt:</strong>
+                <span th:text="${#numbers.formatDecimal(calculation.overallCost, 1, 2)}"></span> PLN
+            </p>
+
+            <div th:if="${calculation.validationPerformed}" class="validation-box"
+                 th:classappend="${calculation.energyConsumptionValidation ? 'valid' : 'invalid'}">
+                <p>
+                    <strong>Status walidacji:</strong>
+                    <span th:text="${calculation.energyConsumptionValidation ? 'kalkulacja poprawna' : 'kalkulacja niepoprawna'}"></span>
+                </p>
+                <p>
+                    <strong>Zużycie odniesienia:</strong>
+                    <span class="energy-value"
+                          th:data-kwh="${calculation.referenceEnergy}"
+                          th:text="${#numbers.formatDecimal(calculation.referenceEnergy, 1, 2)}"></span>
+                    <span class="unit-label">kWh</span>
+                </p>
+                <p>
+                    <strong>Dopuszczalny błąd:</strong>
+                    <span class="energy-value"
+                          th:data-kwh="${calculation.allowedError}"
+                          th:text="${#numbers.formatDecimal(calculation.allowedError, 1, 2)}"></span>
+                    <span class="unit-label">kWh</span>
+                </p>
+                <p th:if="${!calculation.energyConsumptionValidation}">
+                    <strong>Różnica:</strong>
+                    <span class="energy-value"
+                          th:data-kwh="${calculation.energyDifference}"
+                          th:text="${#numbers.formatDecimal(calculation.energyDifference, 1, 2)}"></span>
+                    <span class="unit-label">kWh</span>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div id="monthly-view" class="view-content">
+        <h2>Podsumowanie miesięczne</h2>
+
+        <div class="sub-nav">
+            <button class="sub-btn active" onclick="showSubView('monthly', 'table')">Tabela</button>
+            <button class="sub-btn" onclick="showSubView('monthly', 'charts')">Wykresy</button>
+        </div>
+
+        <div id="monthly-table-subview" class="subview-content active">
+            <table id="monthlyTable">
+                <thead>
+                <tr>
+                    <th>Miesiąc</th>
+                    <th>Zużycie energii</th>
+                    <th>Koszt (PLN)</th>
+                </tr>
+                </thead>
+
+                <tbody>
+                <tr th:each="entry : ${calculation.monthlyEnergyUsed}">
+                    <td th:text="${#strings.toLowerCase(#temporals.format(entry.key, 'LLLL yyyy'))}"></td>
+
+                    <td>
+                        <span class="energy-value"
+                              th:data-kwh="${entry.value}"
+                              th:text="${#numbers.formatDecimal(entry.value, 1, 2)}"></span>
+                        <span class="unit-label">kWh</span>
+                    </td>
+
+                    <td th:text="${#numbers.formatDecimal(calculation.monthlyCost[entry.key], 1, 2)}"></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+    <div id="monthly-charts-subview" class="subview-content">
+        <div th:each="entry : ${calculation.monthlyTimeWorking}"
+             class="monthly-length-data"
+             th:data-month="${#strings.toLowerCase(#temporals.format(entry.key, 'LLLL yyyy'))}"
+             th:data-length="${entry.value}"
+             style="display:none;">
+        </div>
+        <div class="chart-container">
+            <canvas id="monthlyPriceChart"></canvas>
+        </div>
+        <div class="chart-container">
+            <canvas id="monthlyUsageChart"></canvas>
+        </div>
+        <div class="chart-container">
+            <canvas id="monthlyDayLengthChart"></canvas>
+        </div>
+    </div>
+    </div>
+
+    <div id="daily-view" class="view-content">
+        <h2>Wyniki dzienne</h2>
+
+        <div class="sub-nav">
+            <button class="sub-btn active" onclick="showSubView('daily', 'table')">Tabela</button>
+            <button class="sub-btn" onclick="showSubView('daily', 'charts')">Wykresy</button>
+        </div>
+
+        <div id="daily-table-subview" class="subview-content active">
+            <div class="filters">
+                <div class="filter-group">
+                    <label for="monthFilter">Filtruj po miesiącu:</label>
+                    <select id="monthFilter" onchange="filterDailyResults()">
+                        <option value="all">Wszystkie miesiące</option>
+                        <option th:each="month : ${calculation.monthlyEnergyUsed.keySet()}"
+                                th:value="${month}"
+                                th:text="${#strings.toLowerCase(#temporals.format(month, 'LLLL yyyy'))}"></option>
+                    </select>
+                    <label for="pageSize">Wierszy na stronę:</label>
+                    <select id="pageSize" onchange="changePageSize()">
+                        <option value="10">10</option>
+                        <option value="20" selected>20</option>
+                        <option value="50">50</option>
+                        <option value="100">100</option>
+                    </select>
+                </div>
+            </div>
+
+            <table id="dailyTable">
+                <thead>
+                <tr>
+                    <th>Data</th>
+                    <th>Zachód słońca</th>
+                    <th>Wschód słońca</th>
+                    <th>Czas pracy (h)</th>
+                    <th>Zużycie energii</th>
+                    <th>Koszt (PLN)</th>
+                </tr>
+                </thead>
+
+                <tbody>
+                <tr th:each="day : ${calculation.listOfDailyResults}"
+                    th:data-month="${#temporals.format(day.dayOfCalculation, 'yyyy-MM')}"
+                    th:data-date="${#temporals.format(day.dayOfCalculation, 'dd-MM-yyyy')}"
+                    th:data-usage="${day.energyUsed}"
+                    th:data-cost="${day.cost}"
+                    th:data-length="${day.timeWorking}">
+
+                    <td th:text="${#temporals.format(day.dayOfCalculation, 'dd-MM-yyyy')}"></td>
+
+                    <td th:text="${#temporals.format(day.timeStarted, 'HH:mm:ss')}"></td>
+
+                    <td th:text="${#temporals.format(day.timeEnded, 'HH:mm:ss')}"></td>
+
+                    <td th:text="${#numbers.formatDecimal(day.timeWorking, 1, 2)}"></td>
+
+                    <td>
+                        <span class="energy-value"
+                              th:data-kwh="${day.energyUsed}"
+                              th:text="${#numbers.formatDecimal(day.energyUsed, 1, 2)}"></span>
+                        <span class="unit-label">kWh</span>
+                    </td>
+
+                    <td th:text="${#numbers.formatDecimal(day.cost, 1, 2)}"></td>
+                </tr>
+                </tbody>
+            </table>
+
+            <div class="pagination" id="pagination">
+                <button onclick="prevPage()" id="btn_prev">Poprzednia</button>
+                <span id="page_info">Strona <span id="current_page">1</span> z <span id="total_pages">1</span></span>
+                <button onclick="nextPage()" id="btn_next">Następna</button>
+            </div>
+        </div>
+
+        <div id="daily-charts-subview" class="subview-content">
+            <div class="filters">
+                <div class="filter-group">
+                    <label for="chartMonthFilter">Filtruj po miesiącu:</label>
+                    <select id="chartMonthFilter" onchange="updateDailyCharts()">
+                        <option value="all">Wszystkie miesiące</option>
+                        <option th:each="month : ${calculation.monthlyEnergyUsed.keySet()}"
+                                th:value="${month}"
+                                th:text="${#strings.toLowerCase(#temporals.format(month, 'LLLL yyyy'))}"></option>
+                    </select>
+                </div>
+            </div>
+            <div class="chart-container">
+                <canvas id="dailyPriceChart"></canvas>
+            </div>
+            <div class="chart-container">
+                <canvas id="dailyUsageChart"></canvas>
+            </div>
+            <div class="chart-container">
+                <canvas id="dailyDayLengthChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script th:inline="javascript">
+        let currentPage = 1;
+        let pageSize = 20;
+        let filteredRows = [];
+
+        // Chart instances
+        let charts = {
+            monthlyPrice: null,
+            monthlyUsage: null,
+            monthlyDayLength: null,
+            dailyPrice: null,
+            dailyUsage: null,
+            dailyDayLength: null
+        };
+
+        document.addEventListener('DOMContentLoaded', function() {
+            initPagination();
+            initMonthlyCharts();
+            initDailyCharts();
+        });
+
+        function showView(viewId) {
+            // Hide all views
+            document.querySelectorAll('.view-content').forEach(view => {
+                view.classList.remove('active');
+            });
+
+            // Deactivate all main buttons
+            document.querySelectorAll('.view-selector .selector-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            // Show selected view
+            document.getElementById(viewId + '-view').classList.add('active');
+
+            // Activate main button
+            const activeBtn = Array.from(document.querySelectorAll('.view-selector .selector-btn')).find(btn =>
+                btn.getAttribute('onclick').includes("'" + viewId + "'")
+            );
+            if (activeBtn) activeBtn.classList.add('active');
+
+            if (viewId === 'daily') {
+                updatePagination();
+            }
+        }
+
+        function showSubView(viewId, subViewId) {
+            const viewContent = document.getElementById(viewId + '-view');
+            
+            // Hide all subviews in this view
+            viewContent.querySelectorAll('.subview-content').forEach(sv => {
+                sv.classList.remove('active');
+            });
+
+            // Deactivate all sub-buttons in this view
+            viewContent.querySelectorAll('.sub-nav .sub-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            // Show selected subview
+            document.getElementById(viewId + '-' + subViewId + '-subview').classList.add('active');
+
+            // Activate sub-button
+            const activeSubBtn = Array.from(viewContent.querySelectorAll('.sub-nav .sub-btn')).find(btn =>
+                btn.getAttribute('onclick').includes("'" + subViewId + "'")
+            );
+            if (activeSubBtn) activeSubBtn.classList.add('active');
+        }
+
+        function createChart(ctx, label, labels, data, color) {
+            return new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: label,
+                        data: data,
+                        borderColor: color,
+                        backgroundColor: color + '22',
+                        tension: 0.1,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+        }
+
+        function initMonthlyCharts() {
+            const tableRows = Array.from(document.querySelectorAll('#monthlyTable tbody tr'));
+            const labels = tableRows.map(row => row.cells[0].innerText);
+            
+            const usageData = tableRows.map(row => {
+                return parseFloat(row.querySelector('.energy-value').getAttribute('data-kwh'));
+            });
+            
+            const costData = tableRows.map(row => {
+                let text = row.cells[2].innerText;
+                return parseFloat(text.replace(',', '.'));
+            });
+
+            const lengthElements = Array.from(document.querySelectorAll('.monthly-length-data'));
+            const lengthData = lengthElements.map(el => parseFloat(el.getAttribute('data-length')));
+
+            charts.monthlyPrice = createChart(document.getElementById('monthlyPriceChart'), 'Koszt (PLN)', labels, costData, '#e74c3c');
+            charts.monthlyUsage = createChart(document.getElementById('monthlyUsageChart'), 'Zużycie (kWh)', labels, usageData, '#1e4fa1');
+            charts.monthlyDayLength = createChart(document.getElementById('monthlyDayLengthChart'), 'Długość pracy (h)', labels, lengthData, '#f1c40f');
+        }
+
+        function initDailyCharts() {
+            updateDailyCharts();
+        }
+
+        function updateDailyCharts() {
+            const selectedMonth = document.getElementById('chartMonthFilter').value;
+            const allRows = Array.from(document.querySelectorAll('#dailyTable tbody tr'));
+            
+            const filteredData = allRows.filter(row => {
+                return selectedMonth === 'all' || row.getAttribute('data-month') === selectedMonth;
+            });
+
+            const labels = filteredData.map(row => row.getAttribute('data-date'));
+            const usageData = filteredData.map(row => parseFloat(row.getAttribute('data-usage')));
+            const costData = filteredData.map(row => parseFloat(row.getAttribute('data-cost')));
+            const lengthData = filteredData.map(row => parseFloat(row.getAttribute('data-length')));
+
+            if (charts.dailyPrice) charts.dailyPrice.destroy();
+            if (charts.dailyUsage) charts.dailyUsage.destroy();
+            if (charts.dailyDayLength) charts.dailyDayLength.destroy();
+
+            charts.dailyPrice = createChart(document.getElementById('dailyPriceChart'), 'Koszt (PLN)', labels, costData, '#e74c3c');
+            charts.dailyUsage = createChart(document.getElementById('dailyUsageChart'), 'Zużycie (kWh)', labels, usageData, '#1e4fa1');
+            charts.dailyDayLength = createChart(document.getElementById('dailyDayLengthChart'), 'Długość pracy (h)', labels, lengthData, '#f1c40f');
+        }
+
+        function filterDailyResults() {
+            currentPage = 1;
+            updateFilteredRows();
+            updatePagination();
+        }
+
+        function changePageSize() {
+            pageSize = parseInt(document.getElementById('pageSize').value);
+            currentPage = 1;
+            updatePagination();
+        }
+
+        function initPagination() {
+            updateFilteredRows();
+            updatePagination();
+        }
+
+        function updateFilteredRows() {
+            const selectedMonth = document.getElementById('monthFilter').value;
+            const allRows = Array.from(document.querySelectorAll('#dailyTable tbody tr'));
+
+            filteredRows = allRows.filter(row => {
+                return selectedMonth === 'all' || row.getAttribute('data-month') === selectedMonth;
+            });
+
+            // Hide all rows first
+            allRows.forEach(row => row.style.display = 'none');
+        }
+
+        function updatePagination() {
+            const totalPages = Math.ceil(filteredRows.length / pageSize) || 1;
+
+            if (currentPage > totalPages) currentPage = totalPages;
+            if (currentPage < 1) currentPage = 1;
+
+            document.getElementById('current_page').innerText = currentPage;
+            document.getElementById('total_pages').innerText = totalPages;
+
+            document.getElementById('btn_prev').disabled = (currentPage === 1);
+            document.getElementById('btn_next').disabled = (currentPage === totalPages);
+
+            // Hide all rows in filteredRows
+            filteredRows.forEach(row => row.style.display = 'none');
+
+            // Show rows for current page
+            const start = (currentPage - 1) * pageSize;
+            const end = start + pageSize;
+            const pageRows = filteredRows.slice(start, end);
+
+            pageRows.forEach(row => row.style.display = '');
+
+            // Handle empty results
+            const paginationEl = document.getElementById('pagination');
+            if (filteredRows.length === 0) {
+                paginationEl.style.display = 'none';
+            } else {
+                paginationEl.style.display = 'flex';
+            }
+        }
+
+        function prevPage() {
+            if (currentPage > 1) {
+                currentPage--;
+                updatePagination();
+            }
+        }
+
+        function nextPage() {
+            const totalPages = Math.ceil(filteredRows.length / pageSize);
+            if (currentPage < totalPages) {
+                currentPage++;
+                updatePagination();
+            }
+        }
+
+        function changeEnergyUnit() {
+            const selectedUnit = document.getElementById('unitSelector').value;
+            const values = document.querySelectorAll('.energy-value');
+            const labels = document.querySelectorAll('.unit-label');
+
+            values.forEach(valueElement => {
+                const kwh = parseFloat(valueElement.getAttribute('data-kwh'));
+                let convertedValue;
+
+                if (selectedUnit === 'MWh') {
+                    convertedValue = kwh / 1000;
+                } else {
+                    convertedValue = kwh;
+                }
+
+                valueElement.textContent = convertedValue.toFixed(2);
+            });
+
+            labels.forEach(label => {
+                label.textContent = selectedUnit;
+            });
+        }
+    </script>
 
 </div>
 
